@@ -115,7 +115,6 @@ func main() {
 				Usage:   "Show commit logs",
 				Aliases: []string{"l"},
 				Action: func(c *cli.Context) error {
-					println("not implemented yet")
 					cmd := exec.Command("git", "log")
 					cmd.Stdout = os.Stdout
 					cmd.Stderr = os.Stderr
@@ -123,6 +122,112 @@ func main() {
 
 					if err := cmd.Run(); err != nil {
 						log.Fatalf("Error running git log: %s", err)
+					}
+					return nil
+				},
+			},
+			{
+				Name:    "ls-files",
+				Usage:   "Show information about files in the index and the working tree",
+				Aliases: []string{"lsf"},
+				Action: func(c *cli.Context) error {
+					cmd := exec.Command("git", "ls-files")
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					cmd.Stdin = os.Stdin
+
+					if err := cmd.Run(); err != nil {
+						log.Fatalf("Error running git ls-files: %s", err)
+					}
+					return nil
+				},
+			},
+			{
+				Name:    "add",
+				Usage:   "Add file contents to the index",
+				Aliases: []string{"a"},
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "all",
+						Aliases: []string{"A"},
+						Usage:   "Tell the command to automatically stage files that have been modified and deleted",
+						Action: func(c *cli.Context, v bool) error {
+							if v {
+								cmd := exec.Command("git", "add", "-A")
+								cmd.Stderr = os.Stderr
+							}
+							os.Exit(0)
+							return nil
+						},
+					},
+				},
+				Action: func(c *cli.Context) error {
+					slice := c.Args().Slice()
+					if len(slice) == 0 {
+						log.Fatalf("No files specified")
+					}
+					prepended := make([]string, len(slice)+1)
+					prepended[0] = "add"
+					copy(prepended[1:], slice)
+
+					cmd := exec.Command("git", prepended...)
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					cmd.Stdin = os.Stdin
+
+					if err := cmd.Run(); err != nil {
+						log.Fatalf("Error running git add: %s", err)
+					}
+					return nil
+				},
+			},
+			{
+				Name:    "commit",
+				Usage:   "Record changes to the repository",
+				Aliases: []string{"ci"},
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "all",
+						Aliases: []string{"a"},
+						Usage:   "Tell the command to automatically stage files that have been modified and deleted",
+						Action: func(c *cli.Context, v bool) error {
+							if v {
+								cmd := exec.Command("git", "add", "-A")
+								cmd.Stderr = os.Stderr
+							}
+							return nil
+						},
+					},
+					&cli.BoolFlag{
+						Name:    "message",
+						Aliases: []string{"m"},
+						Usage:   "Use the given <msg> as the commit message",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					cmd := exec.Command("git", "commit")
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					cmd.Stdin = os.Stdin
+
+					if err := cmd.Run(); err != nil {
+						log.Fatalf("Error running git commit: %s", err)
+					}
+					return nil
+				},
+			},
+			{
+				Name:    "diff",
+				Usage:   "Show changes between commits, commit and working tree, etc",
+				Aliases: []string{"d"},
+				Action: func(c *cli.Context) error {
+					cmd := exec.Command("git", "diff")
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					cmd.Stdin = os.Stdin
+
+					if err := cmd.Run(); err != nil {
+						log.Fatalf("Error running git diff: %s", err)
 					}
 					return nil
 				},
@@ -154,44 +259,8 @@ func main() {
 								log.Printf("%s \t %s \t %s \t", dir.Name()+file.Name(), "blob", "file")
 							}
 
-							filepath := fmt.Sprintf("%s/objects/%s/%s", GIT_DIR, dir.Name(), file.Name())
-							content, err := os.ReadFile(filepath)
-							if err != nil {
-								log.Fatalf("Failed to read the object file %s\n", err)
-								break
-							}
-							f, err := zlib.NewReader(bytes.NewReader(content))
-							if err != nil {
-								log.Fatalf("Failed to create zlib reader: %s\n", err)
-							}
-							defer f.Close()
-
-							out := bytes.Buffer{}
-
-							_, err = io.Copy(&out, f)
-
-							if err != nil {
-								log.Fatalf("Failed to read the content of the object: %s\n", err)
-								break
-							}
-
-							split := strings.Split(out.String(), "\000")
-
-							body := split[1]
-							fmt.Printf("%s", body)
 						}
 					}
-					// read the content of each file
-					// print the content
-					// println("not implemented yet")
-					// cmd := exec.Command("git", "ls-tree", "-r", "HEAD")
-					// cmd.Stdout = os.Stdout
-					// cmd.Stderr = os.Stderr
-					// cmd.Stdin = os.Stdin
-
-					// if err := cmd.Run(); err != nil {
-					// 	log.Fatalf("Error running git ls-tree: %s", err)
-					// }
 					return nil
 				},
 			},
